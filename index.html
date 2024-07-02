@@ -96,6 +96,9 @@ const taskInput = document.getElementById('task-input');
 const addTaskButton = document.getElementById('add-task');
 const taskList = document.getElementById('task-list');
 
+// Store seen tasks to prevent duplicates
+const seenTasks = new Set();
+
 // Add a new task
 addTaskButton.addEventListener('click', () => {
     const taskText = taskInput.value.trim();
@@ -108,7 +111,9 @@ addTaskButton.addEventListener('click', () => {
 
 // Render tasks
 function renderTask(taskId, taskData) {
-    if (!taskData) return;
+    if (!taskData || seenTasks.has(taskId)) return;
+
+    seenTasks.add(taskId);
 
     const taskItem = document.createElement('li');
     taskItem.className = 'task-item';
@@ -134,7 +139,10 @@ function renderTask(taskId, taskData) {
 tasksRef.map().on((taskData, taskId) => {
     if (taskData === null) {
         const taskItem = document.getElementById(taskId);
-        if (taskItem) taskList.removeChild(taskItem);
+        if (taskItem) {
+            taskList.removeChild(taskItem);
+            seenTasks.delete(taskId);
+        }
     } else {
         renderTask(taskId, taskData);
     }
