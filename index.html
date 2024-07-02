@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared To-Do List</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #app {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            width: 300px;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        #task-form {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        #task-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        #add-task {
+            padding: 8px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #add-task:hover {
+            background-color: #218838;
+        }
+        #task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .task-item {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .remove-task {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        .remove-task:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+<div id="app">
+    <h1>Shared To-Do List</h1>
+    <div id="task-form">
+        <input type="text" id="task-input" placeholder="Add a new task...">
+        <button id="add-task">Add</button>
+    </div>
+    <ul id="task-list"></ul>
+</div>
+<script>
+// Initialize GUN
+const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+const tasksRef = gun.get('shared-todo-tasks');
+
+// DOM Elements
+const taskInput = document.getElementById('task-input');
+const addTaskButton = document.getElementById('add-task');
+const taskList = document.getElementById('task-list');
+
+// Add a new task
+addTaskButton.addEventListener('click', () => {
+    const taskText = taskInput.value.trim();
+    if (taskText) {
+        const taskId = Gun.text.random();
+        tasksRef.get(taskId).put({ text: taskText, done: false });
+        taskInput.value = '';
+    }
+});
+
+// Render tasks
+function renderTask(taskId, taskData) {
+    if (!taskData) return;
+
+    const taskItem = document.createElement('li');
+    taskItem.className = 'task-item';
+    taskItem.id = taskId;
+
+    const taskText = document.createElement('span');
+    taskText.textContent = taskData.text;
+
+    const removeButton = document.createElement('button');
+    removeButton.textContent = 'Remove';
+    removeButton.className = 'remove-task';
+    removeButton.addEventListener('click', () => {
+        tasksRef.get(taskId).put(null);
+    });
+
+    taskItem.appendChild(taskText);
+    taskItem.appendChild(removeButton);
+
+    taskList.appendChild(taskItem);
+}
+
+// Update tasks list
+tasksRef.map().on((taskData, taskId) => {
+    if (taskData === null) {
+        const taskItem = document.getElementById(taskId);
+        if (taskItem) taskList.removeChild(taskItem);
+    } else {
+        renderTask(taskId, taskData);
+    }
+});
+</script>
+</body>
+</html>
